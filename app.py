@@ -40,18 +40,23 @@ def extract_text_from_url(url):
 
 # Function to generate summary
 def generate_summary(text):
-    response = generator(f"Summarize this: {text}", max_length=200)
+    response = client.text_generation(f"Summarize this: {text}", max_new_tokens=200)
     
-    # Print response to check its structure
-    print("API Response:", response)
-
-    return response[0]['generated_text']  # Ensure response is a list of dictionaries
-
+    # Check if response is a string (error handling)
+    if isinstance(response, str):
+        return response  # Likely an error message from the API
+    
+    return response  # Response is already a string
 
 # Function to generate quiz questions
 def generate_quiz(text):
     response = client.text_generation(f"Generate 5 multiple-choice questions from this text: {text}", max_new_tokens=300)
-    return response.get("generated_text", "Failed to generate quiz.")
+    
+    # Check if response is a string (error handling)
+    if isinstance(response, str):
+        return response  # Likely an error message from the API
+    
+    return response  # Response is already a string
 
 # Streamlit UI
 st.title("📚 AI Tutor: Personalized Learning Assistant")
