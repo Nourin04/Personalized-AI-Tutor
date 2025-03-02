@@ -87,3 +87,4 @@ if st.button("Generate Summary & Quiz") and input_text:
         st.write(generate_quiz(input_text))
 
 st.markdown("\n---\n👨‍💻 Built with LLaMA & Streamlit")
+
