@@ -7,7 +7,7 @@ from huggingface_hub import InferenceClient
 
 # Hugging Face Model Details
 HF_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
-HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+HF_API_KEY = st.secrets["HUGGINGFACE_API_KEY"]
 
 # Validate API Key
 if not HF_API_KEY:
