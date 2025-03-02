@@ -4,6 +4,7 @@ import pdfplumber
 import requests
 from bs4 import BeautifulSoup
 from huggingface_hub import InferenceClient
+import re
 
 # Hugging Face Model Details
 HF_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
@@ -17,6 +18,12 @@ if not HF_API_KEY:
 # Initialize Hugging Face Inference Client
 client = InferenceClient(model=HF_MODEL, token=HF_API_KEY)
 
+# Function to clean extracted text
+def clean_text(text):
+    text = re.sub(r'\s+', ' ', text)  # Remove excessive spaces and newlines
+    text = text.strip()
+    return text[:5000]  # Limit to 5000 characters to retain useful content
+
 # Function to extract text from PDF
 def extract_text_from_pdf(uploaded_file):
     text = ""
@@ -25,7 +32,7 @@ def extract_text_from_pdf(uploaded_file):
             extracted_text = page.extract_text(x_tolerance=2, y_tolerance=2)
             if extracted_text:
                 text += extracted_text + "\n"
-    return text.strip() if text else "No readable text found in the PDF."
+    return clean_text(text) if text else "No readable text found in the PDF."
 
 # Function to extract text from a website
 def extract_text_from_url(url):
@@ -34,29 +41,25 @@ def extract_text_from_url(url):
         soup = BeautifulSoup(response.text, 'html.parser')
         paragraphs = soup.find_all('p')
         text = "\n".join([p.get_text() for p in paragraphs])
-        return text[:3000] if text else "No text found on the page."
+        return clean_text(text) if text else "No text found on the page."
     except requests.exceptions.RequestException:
         return "Failed to fetch the webpage. Check the URL."
 
+# Function to process LLaMA response
+def process_response(response):
+    if isinstance(response, dict) and "generated_text" in response:
+        return response["generated_text"].strip()
+    return "Error generating response. Try again."
+
 # Function to generate summary
 def generate_summary(text):
-    response = client.text_generation(f"Summarize this: {text}", max_new_tokens=200)
-    
-    # Check if response is a string (error handling)
-    if isinstance(response, str):
-        return response  # Likely an error message from the API
-    
-    return response  # Response is already a string
+    response = client.text_generation(f"Summarize this text in clear and concise bullet points:\n\n{text}", max_new_tokens=300)
+    return process_response(response)
 
 # Function to generate quiz questions
 def generate_quiz(text):
-    response = client.text_generation(f"Generate 5 multiple-choice questions from this text: {text}", max_new_tokens=300)
-    
-    # Check if response is a string (error handling)
-    if isinstance(response, str):
-        return response  # Likely an error message from the API
-    
-    return response  # Response is already a string
+    response = client.text_generation(f"Generate 5 multiple-choice questions from this text, with 4 answer choices each and the correct answer marked:\n\n{text}", max_new_tokens=500)
+    return process_response(response)
 
 # Streamlit UI
 st.title("📚 AI Tutor: Personalized Learning Assistant")
@@ -87,4 +90,3 @@ if st.button("Generate Summary & Quiz") and input_text:
         st.write(generate_quiz(input_text))
 
 st.markdown("\n---\n👨‍💻 Built with LLaMA & Streamlit")
-
